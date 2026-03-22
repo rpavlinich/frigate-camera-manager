@@ -9,10 +9,8 @@ Python-based OpenClaw skill for managing Frigate NVR cameras. Supports listing c
 
 ## API Reference Policy
 
-Before executing any Frigate API call, this skill must:
-
 1. Read the `FRIGATE_API_BASE` environment variable using `os.environ['FRIGATE_API_BASE']`
-2. Fetch `{FRIGATE_API_BASE}/api/docs` to confirm the correct endpoint structure, parameters, and response schema for the running Frigate version
+2. Before executing an unfamiliar Frigate API call, fetch `{FRIGATE_API_BASE}/api/docs` to confirm the correct endpoint. Skip this step for endpoints already confirmed in this session.
 3. Only then construct and execute the API call
 
 This ensures all API calls are aligned with the exact Frigate version in use, rather than relying on potentially outdated assumptions.
@@ -135,7 +133,7 @@ The following actions **require explicit user approval before executing:**
 
 ```bash
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Copy and fill in credentials
 cp example.env .env

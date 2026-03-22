@@ -10,3 +10,11 @@ Usage:
 - Scrape logs with fixes
 
 Note: This is a scaffold. Implementations will be added in subsequent steps.
+
+## Installation
+
+Dependencies are managed with `uv`. To install:
+
+```bash
+uv pip install -r requirements.txt
+```

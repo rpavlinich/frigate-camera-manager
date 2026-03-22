@@ -1,2 +1,6 @@
--e .env
-media/
+# Virtual environment
+venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store

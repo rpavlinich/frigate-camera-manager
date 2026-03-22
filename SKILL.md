@@ -150,6 +150,14 @@ pytest tests/
 
 ---
 
+## API Reference Policy
+
+1. Read the `FRIGATE_API_BASE` environment variable using `os.environ['FRIGATE_API_BASE']`
+2. Before executing an unfamiliar Frigate API call, fetch `{FRIGATE_API_BASE}/api/docs` to confirm the correct endpoint. Skip this step for endpoints already confirmed in this session.
+3. Only then construct and execute the API call
+
+---
+
 ## Non-Goals (current version)
 
 - Does not modify Frigate configuration

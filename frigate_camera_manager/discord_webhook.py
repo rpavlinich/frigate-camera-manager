@@ -15,6 +15,20 @@ DEFAULT_WEBHOOK_URL = os.environ.get("DISCORD_DEFAULT_WEBHOOK_URL", "")
 # Optional: dict of camera_id -> webhook URL, loaded from env or set at runtime
 CAMERA_WEBHOOKS: Dict[str, str] = {}
 
+# Auto-populate from env vars matching DISCORD_WEBHOOK_{CAMERA_ID}.
+# Explicit overrides handle cases where env key doesn't match Frigate's camera ID exactly.
+_ENV_CAMERA_MAP = {
+    "DISCORD_WEBHOOK_FRONT_YARD":   "Front_Yard",
+    "DISCORD_WEBHOOK_BACK_YARD":    "Backyard",       # Frigate uses "Backyard", not "Back_Yard"
+    "DISCORD_WEBHOOK_FRONT_DOOR":   "Front_Doorbell", # Frigate uses "Front_Doorbell"
+    "DISCORD_WEBHOOK_LIVING_ROOM":  "Living_Room",
+    "DISCORD_WEBHOOK_EMMYS_ROOM":   "Emmys_Room",
+}
+for _env_key, _cam_id in _ENV_CAMERA_MAP.items():
+    _val = os.environ.get(_env_key)
+    if _val:
+        CAMERA_WEBHOOKS[_cam_id] = _val
+
 
 def register_webhook(camera_id: str, webhook_url: str) -> None:
     """Register a Discord webhook URL for a specific camera."""

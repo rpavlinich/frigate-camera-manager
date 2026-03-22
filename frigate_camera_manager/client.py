@@ -55,8 +55,8 @@ class FrigateApiClient:
         return self._get_json("/api/cameras")
 
     def get_camera_snapshot(self, camera_id: str) -> bytes:
-        """GET /api/cameras/{id}/snapshot.jpg — returns JPEG bytes."""
-        return self._get_bytes(f"/api/cameras/{camera_id}/snapshot.jpg")
+        """GET /api/{camera_id}/latest.jpg — returns JPEG bytes of the latest frame."""
+        return self._get_bytes(f"/api/{camera_id}/latest.jpg")
 
     # ── Events ───────────────────────────────────────────────────────────
     def get_events(

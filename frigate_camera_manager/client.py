@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 
 class FrigateApiClient:
-    """Low-level wrapper around the Frigate HTTP API (v1)."""
+    """Low-level wrapper around the Frigate HTTP API."""
 
     def __init__(
         self,
@@ -51,12 +51,18 @@ class FrigateApiClient:
 
     # ── Cameras ──────────────────────────────────────────────────────────
     def list_cameras(self) -> Dict[str, Any]:
-        """GET /api/cameras — returns full camera config dict."""
-        return self._get_json("/api/cameras")
+        """GET /api/config — returns full config, extract cameras section."""
+        config = self._get_json("/api/config")
+        # Frigate config has a 'cameras' section containing camera definitions
+        if isinstance(config, dict) and "cameras" in config:
+            return config["cameras"]
+        else:
+            # Fallback: if config is already the cameras dict
+            return config if isinstance(config, dict) else {}
 
     def get_camera_snapshot(self, camera_id: str) -> bytes:
-        """GET /api/{camera_id}/latest.jpg — returns JPEG bytes of the latest frame."""
-        return self._get_bytes(f"/api/{camera_id}/latest.jpg")
+        """GET /api/cameras/{id}/snapshot.jpg — returns JPEG bytes."""
+        return self._get_bytes(f"/api/cameras/{camera_id}/snapshot.jpg")
 
     # ── Events ───────────────────────────────────────────────────────────
     def get_events(
@@ -66,7 +72,7 @@ class FrigateApiClient:
         after: Optional[float] = None,
         before: Optional[float] = None,
     ) -> List[dict]:
-        """GET /api/v1/events with optional filters."""
+        """GET /api/events with optional filters."""
         params: Dict[str, Any] = {"limit": limit}
         if camera:
             params["camera"] = camera
@@ -74,15 +80,15 @@ class FrigateApiClient:
             params["after"] = after
         if before is not None:
             params["before"] = before
-        return self._get(f"/api/v1/events", params=params).json()
+        return self._get("/api/events", params=params).json()
 
     def get_event_thumbnail(self, event_id: str) -> bytes:
-        """GET /api/v1/events/{id}/thumbnail — JPEG bytes."""
-        return self._get_bytes(f"/api/v1/events/{event_id}/thumbnail")
+        """GET /api/events/{id}/thumbnail — JPEG bytes."""
+        return self._get_bytes(f"/api/events/{event_id}/thumbnail")
 
     def get_event_clip(self, event_id: str) -> bytes:
-        """GET /api/v1/events/{id}/clip — MP4 bytes."""
-        resp = self._get(f"/api/v1/events/{event_id}/clip", headers={**self._headers(), "Accept": "video/mp4"})
+        """GET /api/events/{id}/clip — MP4 bytes."""
+        resp = self._get(f"/api/events/{event_id}/clip", headers={**self._headers(), "Accept": "video/mp4"})
         return resp.content
 
     # ── Review ───────────────────────────────────────────────────────────
@@ -93,7 +99,7 @@ class FrigateApiClient:
         before: Optional[float] = None,
         limit: int = 50,
     ) -> List[dict]:
-        """GET /api/v1/review — review-level summaries."""
+        """GET /api/review — review-level summaries."""
         params: Dict[str, Any] = {"limit": limit}
         if camera:
             params["camera"] = camera
@@ -101,12 +107,12 @@ class FrigateApiClient:
             params["after"] = after
         if before is not None:
             params["before"] = before
-        return self._get("/api/v1/review", params=params).json()
+        return self._get("/api/review", params=params).json()
 
     # ── Logs ─────────────────────────────────────────────────────────────
     def get_logs(self, process: str = "frigate", limit: int = 200) -> str:
-        """GET /api/v1/logs/{process} — returns raw log text."""
-        resp = self._get(f"/api/v1/logs/{process}")
+        """GET /api/logs/{process} — returns raw log text."""
+        resp = self._get(f"/api/logs/{process}")
         try:
             return resp.json()
         except Exception:
@@ -114,9 +120,10 @@ class FrigateApiClient:
 
     # ── System / connectivity ────────────────────────────────────────────
     def get_version(self) -> str:
-        """GET /api/v1/version — quick connectivity check."""
-        return self._get_json("/api/v1/version")
+        """GET /api/version — quick connectivity check."""
+        resp = self._get("/api/version")
+        return resp.text
 
     def get_stats(self) -> Dict[str, Any]:
-        """GET /api/v1/stats — system stats incl. per-camera info."""
-        return self._get_json("/api/v1/stats")
+        """GET /api/stats — system stats incl. per-camera info."""
+        return self._get_json("/api/stats")

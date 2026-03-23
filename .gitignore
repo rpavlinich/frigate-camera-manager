@@ -1,6 +1,11 @@
 # Virtual environment
 venv/
+
+# Python cache
 __pycache__/
 *.pyc
+frigate_camera_manager/__pycache__/
+
+# Local config
 .env
 .DS_Store

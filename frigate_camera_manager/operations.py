@@ -6,6 +6,8 @@ import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
+from PIL import Image, ImageStat
+
 from .cache import MediaCache, default_cache
 from .client import FrigateApiClient
 from .models import (
@@ -59,6 +61,19 @@ def check_connectivity(client: FrigateApiClient) -> List[CameraStatus]:
 
 
 # ── Snapshots ─────────────────────────────────────────────────────────────────
+def _is_near_black_placeholder(image_bytes: bytes, threshold: float = 5.0) -> bool:
+    """Detect Frigate's bogus near-black placeholder snapshots.
+
+    In this setup, bad snapshots are tiny JPEGs with almost every pixel near 1/255.
+    """
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert("L")
+        stat = ImageStat.Stat(image)
+        return stat.mean[0] <= threshold and stat.extrema[0][1] <= threshold
+    except Exception:
+        return False
+
+
 def fetch_snapshot(
     client: FrigateApiClient,
     camera_id: str,
@@ -67,29 +82,36 @@ def fetch_snapshot(
     """Fetch and cache the latest snapshot for a camera, and save to media directory."""
     cache_key = f"snapshot:{camera_id}"
     existing = cache.get(cache_key)
-    if existing:
+    if existing and not _is_near_black_placeholder(existing.data):
         return existing.data
+    if existing and _is_near_black_placeholder(existing.data):
+        cache.clear()
 
     data = client.get_camera_snapshot(camera_id)
+    if _is_near_black_placeholder(data):
+        raise RuntimeError(
+            f"Snapshot for {camera_id} looks like Frigate's black placeholder frame; refusing to cache it."
+        )
+
     cache.put_bytes(cache_key, data, media_type="jpeg", camera_id=camera_id)
-    
+
     # Also save to media directory with timestamp
     try:
         from pathlib import Path
         import time
-        
+
         media_dir = Path("/root/.openclaw/workspace/skills/frigate-camera-manager/media/snapshots") / camera_id
         media_dir.mkdir(parents=True, exist_ok=True)
-        
+
         timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
         file_path = media_dir / f"{timestamp}.jpg"
-        
+
         with open(file_path, "wb") as f:
             f.write(data)
     except Exception:
         # Don't let media saving errors break the main functionality
         pass
-    
+
     return data
 
 
